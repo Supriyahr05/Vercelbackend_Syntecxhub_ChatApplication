@@ -1,6 +1,7 @@
 // server.js
 console.log("🚀 Server file started");
 
+import "dotenv/config";
 import express from "express";
 import http from "http";
 import mongoose from "mongoose";
@@ -26,7 +27,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ---------------- MongoDB ----------------
 mongoose
-  .connect("mongodb://127.0.0.1:27017/chatapp")
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ MongoDB error:", err));
 
@@ -233,4 +234,5 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => console.log("❌ User disconnected"));
 });
 
-server.listen(5000, () => console.log("✅ Server running on port 5000"));
+const PORT = process.env.PORT || 5000; 
+server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
