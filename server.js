@@ -33,10 +33,16 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ---------------- MongoDB ----------------
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.log("❌ MongoDB error:", err));
+mongoose.connect(process.env.MONGO_URI, {
+  // These options help prevent buffering timeouts in serverless environments
+  connectTimeoutMS: 10000, 
+  socketTimeoutMS: 45000,
+})
+.then(() => console.log("✅ MongoDB Connected Successfully"))
+.catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+// Add this line to handle the "buffering" issue directly
+mongoose.set('bufferCommands', false);
 
 // ---------------- Multer ----------------
 const storage = multer.diskStorage({
