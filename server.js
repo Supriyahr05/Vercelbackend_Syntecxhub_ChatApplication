@@ -85,33 +85,26 @@ const Room = mongoose.model(
 );
 
 // ---------------- AUTH ----------------
-app.post("/register", upload.single("avatar"), async (req, res) => {
+// ---------------- AUTH ----------------
+app.post("/register", async (req, res) => { // Removed upload.single("avatar")
   try {
     const { name, email, password } = req.body;
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ msg: "User already exists" });
 
     const hash = await bcrypt.hash(password, 10);
-    const avatar = req.file ? `/uploads/${req.file.filename}` : "";
+    
+    // For now, let's just set avatar to an empty string
+    const avatar = ""; 
 
     const newUser = await User.create({ name, email, password: hash, avatar });
     
-    // --- SOCKET DISABLED FOR VERCEL TESTING ---
-    /*
-    io.emit("newUserRegistered", { 
-      name: newUser.name, 
-      email: newUser.email, 
-      avatar: newUser.avatar 
-    });
-    */
-    
     res.json({ msg: "Registered successfully" });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ msg: "Register error" });
+    console.error("Detailed Error:", err); // This helps us see the real error in Vercel Logs
+    res.status(500).json({ msg: "Register error", details: err.message });
   }
 });
-
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
