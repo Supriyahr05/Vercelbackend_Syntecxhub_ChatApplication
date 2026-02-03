@@ -1,4 +1,3 @@
-// server.js
 console.log("🚀 Server file started");
 
 import "dotenv/config";
@@ -19,9 +18,17 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
+
+// Keep the instance for now so code doesn't break, but we will comment out the 'emits'
 const io = new Server(server, { cors: { origin: "*" } });
 
-app.use(cors());
+// --- UPDATED CORS FOR VERCEL ---
+app.use(cors({
+  origin: "*", 
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -89,12 +96,14 @@ app.post("/register", upload.single("avatar"), async (req, res) => {
 
     const newUser = await User.create({ name, email, password: hash, avatar });
     
-    // Live update for other users
+    // --- SOCKET DISABLED FOR VERCEL TESTING ---
+    /*
     io.emit("newUserRegistered", { 
       name: newUser.name, 
       email: newUser.email, 
       avatar: newUser.avatar 
     });
+    */
     
     res.json({ msg: "Registered successfully" });
   } catch (err) {
@@ -144,7 +153,9 @@ app.post("/createRoom", async (req, res) => {
 
     const room = await Room.create({ name, creator, members: [creator], joinRequests: [] });
     
-    io.emit("newRoomCreated", room);
+    // --- SOCKET DISABLED FOR VERCEL TESTING ---
+    // io.emit("newRoomCreated", room);
+    
     res.json({ msg: "Room created" });
   } catch (err) {
     res.status(500).json({ msg: "Room creation error" });
@@ -160,7 +171,8 @@ app.post("/requestJoinRoom", async (req, res) => {
     if (!room.joinRequests.includes(email) && !room.members.includes(email)) {
       room.joinRequests.push(email);
       await room.save();
-      io.emit("requestUpdate", { roomName: roomName });
+      // --- SOCKET DISABLED FOR VERCEL TESTING ---
+      // io.emit("requestUpdate", { roomName: roomName });
     }
     res.json({ msg: "Request sent" });
   } catch (err) {
@@ -178,7 +190,9 @@ app.post("/approveJoin", async (req, res) => {
     if (!room.members.includes(email)) room.members.push(email);
     await room.save();
     
-    io.emit("roomUpdated", { roomName, members: room.members });
+    // --- SOCKET DISABLED FOR VERCEL TESTING ---
+    // io.emit("roomUpdated", { roomName, members: room.members });
+    
     res.json({ msg: "Approved" });
   } catch (err) {
     res.status(500).json({ msg: "Approve error" });
@@ -196,7 +210,8 @@ app.post("/upload", upload.single("file"), (req, res) => {
   res.json({ path: `/uploads/${req.file.filename}` });
 });
 
-// ---------------- SOCKET.IO ----------------
+// ---------------- SOCKET.IO (DISABLED FOR VERCEL) ----------------
+/*
 io.on("connection", (socket) => {
   console.log("🔌 User connected");
 
@@ -233,6 +248,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => console.log("❌ User disconnected"));
 });
+*/
 
 const PORT = process.env.PORT || 5000; 
 server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
