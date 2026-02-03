@@ -111,12 +111,14 @@ app.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ msg: "Wrong password" });
 
-    const token = jwt.sign({ email }, "secret");
+    // FIX: Include the secret key from .env
+    const token = jwt.sign({ email }, process.env.JWT_SECRET || "secret");
+    
     res.json({
       token,
       email: user.email,
       name: user.name,
-      avatar: user.avatar
+      avatar: user.avatar || "" // Ensure this isn't undefined
     });
   } catch (err) {
     res.status(500).json({ msg: "Login error" });
