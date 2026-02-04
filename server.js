@@ -164,6 +164,68 @@ app.post("/upload", upload.single("file"), (req, res) => {
   res.json({ path: `/uploads/${req.file.filename}` });
 });
 
+// --- ADD THESE NEW ROUTES TO YOUR server.js ---
+
+// 1. Route to GET messages (polling)
+app.get("/messages/:type/:id", async (req, res) => {
+  try {
+    await connectDB();
+    const { type, id } = req.params;
+    const { me } = req.query; // Used to identify the sender for private chats
+
+    let query;
+    if (type === "room") {
+      query = { receiver: id, isRoom: true };
+    } else {
+      query = {
+        isRoom: false,
+        $or: [
+          { senderEmail: me, receiver: id },
+          { senderEmail: id, receiver: me }
+        ]
+      };
+    }
+
+    const messages = await Message.find(query).sort({ time: 1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching messages" });
+  }
+});
+
+// 2. Route to SEND a message (replacing socket.emit)
+app.post("/messages", async (req, res) => {
+  try {
+    await connectDB();
+    const { senderEmail, senderName, receiver, text, file, isRoom } = req.body;
+    const newMessage = await Message.create({
+      senderEmail,
+      senderName,
+      receiver,
+      text,
+      file,
+      isRoom
+    });
+    res.json(newMessage);
+  } catch (err) {
+    res.status(500).json({ msg: "Error sending message" });
+  }
+});
+
+// 3. Update createRoom to ensure connectDB is called
+app.post("/createRoom", async (req, res) => {
+  try {
+    await connectDB();
+    const { name, creator } = req.body;
+    const exists = await Room.findOne({ name });
+    if (exists) return res.status(400).json({ msg: "Room exists" });
+
+    await Room.create({ name, creator, members: [creator], joinRequests: [] });
+    res.json({ msg: "Room created" });
+  } catch (err) {
+    res.status(500).json({ msg: "Room creation error" });
+  }
+});
 // ... existing Room routes (createRoom, requestJoinRoom, etc.) ...
 // Remember to add 'await connectDB()' inside them if you see more timeout errors!
 
