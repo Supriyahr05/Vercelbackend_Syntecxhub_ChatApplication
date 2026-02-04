@@ -226,6 +226,44 @@ app.post("/createRoom", async (req, res) => {
     res.status(500).json({ msg: "Room creation error" });
   }
 });
+
+// 1. ROUTE: User clicks "Request Join"
+app.post("/requestJoinRoom", async (req, res) => {
+  try {
+    await connectDB();
+    const { roomName, email } = req.body;
+    
+    // Add email to joinRequests array if it's not already there
+    await Room.findOneAndUpdate(
+      { name: roomName },
+      { $addToSet: { joinRequests: email } } 
+    );
+    
+    res.json({ msg: "Request sent" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error requesting join" });
+  }
+});
+
+// 2. ROUTE: Creator clicks "Approve" (or "Add")
+app.post("/approveJoin", async (req, res) => {
+  try {
+    await connectDB();
+    const { roomName, email } = req.body;
+
+    await Room.findOneAndUpdate(
+      { name: roomName },
+      { 
+        $addToSet: { members: email }, // Add to members
+        $pull: { joinRequests: email } // Remove from requests
+      }
+    );
+
+    res.json({ msg: "User approved" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error approving user" });
+  }
+});
 // ... existing Room routes (createRoom, requestJoinRoom, etc.) ...
 // Remember to add 'await connectDB()' inside them if you see more timeout errors!
 
